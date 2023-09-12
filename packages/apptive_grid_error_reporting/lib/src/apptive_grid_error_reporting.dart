@@ -15,26 +15,29 @@ class ApptiveGridErrorReporting {
     required this.reportingForm,
     required this.project,
     required this.maxLogEntries,
-    required this.httpClient,
     required this.ignoreError,
+    required this.formatError,
     required this.sendErrors,
-  });
+    required ApptiveGridClient client,
+  }) : _client = client;
 
   factory ApptiveGridErrorReporting({
     required Uri reportingForm,
     required String project,
     int maxLogEntries = 25,
-    http.Client? httpClient,
     bool Function(dynamic)? ignoreError,
-    bool sendErrors = true,
+    String Function(Object)? formatError,
+    bool sendErrors = kReleaseMode,
+    ApptiveGridClient? client,
   }) {
     final reporting = ApptiveGridErrorReporting._(
       reportingForm: reportingForm,
       project: project,
       maxLogEntries: maxLogEntries,
-      httpClient: httpClient,
       ignoreError: ignoreError ?? (_) => false,
+      formatError: formatError ?? (error) => error._errorName,
       sendErrors: sendErrors,
+      client: client ?? ApptiveGridClient(), // coverage:ignore-line
     );
 
     reporting._init();
@@ -45,8 +48,8 @@ class ApptiveGridErrorReporting {
   final Uri reportingForm;
   final String project;
   final bool Function(dynamic) ignoreError;
+  final String Function(Object) formatError;
   final int maxLogEntries;
-  final http.Client? httpClient;
   bool sendErrors = true;
 
   late final String? _appVersion;
@@ -58,9 +61,11 @@ class ApptiveGridErrorReporting {
 
   final List<LogEntry> _log = [];
 
-  final _client = ApptiveGridClient();
+  final ApptiveGridClient _client;
 
   final _setupCompleter = Completer();
+
+  Future get isInitialized => _setupCompleter.future;
 
   Future<void> _init() async {
     final packageInfo = await PackageInfo.fromPlatform();
@@ -86,6 +91,7 @@ class ApptiveGridErrorReporting {
     if (!_ignoreError(error)) {
       final reportingDate = DateTime.now();
       await _setupCompleter.future;
+      final errorName = formatError(error);
       try {
         if (sendErrors) {
           final formData = await _client.loadForm(
@@ -119,15 +125,16 @@ class ApptiveGridErrorReporting {
 
           await _client.submitForm(
               formData.links[ApptiveLinkType.submit]!, formData);
+          debugPrint('AGErrorReporting: $errorName reported');
         } else {
-          debugPrint('AGErrorReporting: Error not sent. sendErrors is false.');
+          debugPrint(
+              'AGErrorReporting: Error $errorName not sent. sendErrors is false.');
         }
         _log.removeWhere((element) => element.time.isBefore(reportingDate));
-        debugPrint('AGErrorReporting: ${error.errorName} reported');
       } catch (e) {
-        log('Could not Report Error: ${error.errorName}. Cause: ${e.errorName}');
+        log('Could not Report Error: $errorName. Cause: ${formatError(e)}');
         debugPrint(
-            'AGErrorReport: Could not Report Error: ${error.errorName}. Cause: ${e.errorName}');
+            'AGErrorReport: Could not Report Error: $errorName. Cause: ${formatError(e)}');
       }
     }
   }
@@ -187,7 +194,7 @@ class ApptiveGridErrorReporting {
     required Uint8List? stackTrace,
   }) async {
     formData.fillValue(key: keys.project, value: project);
-    formData.fillValue(key: keys.name, value: error.errorName);
+    formData.fillValue(key: keys.name, value: formatError(error));
     formData.fillValue(key: keys.time, value: reportingDate);
     formData.fillValue(key: keys.appVersion, value: _appVersion);
     formData.fillValue(key: keys.os, value: _os);
@@ -235,7 +242,7 @@ extension _FormDataX on FormData {
 }
 
 extension _ErrorX on Object {
-  String get errorName {
+  String get _errorName {
     if (this is http.Response) {
       return 'Response (${(this as http.Response).statusCode})\n${(this as http.Response).body})';
     }
