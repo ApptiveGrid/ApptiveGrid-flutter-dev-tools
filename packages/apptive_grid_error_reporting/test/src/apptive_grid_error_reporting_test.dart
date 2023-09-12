@@ -564,11 +564,12 @@ void main() {
         ),
       );
       errorReporting = ApptiveGridErrorReporting(
-          reportingForm: reportingForm,
-          project: 'project',
-          client: client,
-          sendErrors: true,
-          avoidDuplicatePerSession: true);
+        reportingForm: reportingForm,
+        project: 'project',
+        client: client,
+        sendErrors: true,
+        avoidDuplicatePerSession: true,
+      );
 
       await errorReporting.isInitialized;
 
