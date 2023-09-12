@@ -1,39 +1,41 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# ApptiveGrid ErrorReporting
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages). 
+With `ApptiveGridErrorReporting` it is super easy to Log Errors to ApptiveGrid
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages). 
--->
+## Setup
+1. [Create a new Error Reporting Space on ApptiveGrid using this Template](https://app.apptivegrid.de/#/template/65005ff33e85a232b5c17517)
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+   _(Don't worry if you don't have an ApptiveGrid Account yet, you can create on there. Try it out. It's free)_
+2. Copy the Reporting Form Link
 
-## Features
-
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+   <img src="https://github.com/ApptiveGrid/ApptiveGrid-flutter-dev-tools/blob/main/.github/assets/apptive_grid_error_reporting/copy_form_link.png?raw=true" width="1000px">
+3. Create a new instance of `ApptiveGridErrorReporting`
+   
+    ```dart
+    final reporting = ApptiveGridErrorReporting(
+      reportingForm: Uri.parse('FORM_LINK'),
+      project: 'myProject',
+    );
+    ```
+   
+## Report Errors
+Send Errors with a single command
+```dart
+reporting.report(error); 
+```
+This will send the error to ApptiveGrid. You can provide additional Infos like a `Stacktrace` or a custom `message` to get more context when looking at the reports on ApptiveGrid
 
 ```dart
-const like = 'sample';
+reporting.report(
+  error,
+  stackTrace: StackTrace.current,
+  message: 'Error when doing a demo',
+); 
 ```
 
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+## Log Events
+You can provide additional Log Entries to further know what a user might have done leading to an error.
+```dart
+reporting.log('Something was clicked'); 
+```
+    
