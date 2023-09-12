@@ -1,9 +1,12 @@
 name: apptive_grid_error_reporting
 description: A new Flutter package project.
 version: 0.0.1
+homepage: https://www.apptivegrid.de
+repository: https://github.com/ApptiveGrid/apptive_grid_flutter_dev_tools/tree/main/packages/apptive_grid_error_reporting
 
 environment:
-  sdk: ">=2.17.5 <3.0.0"
+  sdk: ">=2.17.5 <4.0.0"
+
   flutter: ">=1.17.0"
 
 dependency_overrides:

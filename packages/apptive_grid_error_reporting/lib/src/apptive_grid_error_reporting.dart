@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:universal_io/io.dart' as uio;
 
+/// A reporting tool for saving error events in ApptiveGrid
 class ApptiveGridErrorReporting {
   ApptiveGridErrorReporting._({
     required this.reportingForm,
@@ -21,6 +22,9 @@ class ApptiveGridErrorReporting {
     required ApptiveGridClient client,
   }) : _client = client;
 
+  /// Creates a ApptiveGridErrorReporting
+  /// Error reported through [reportError] are send using an ApptiveGridForm obtained by [reportingForm]
+  /// [project] is used to identify this App Project so you can differentiate certain flavors or projects in the same ApptiveGrid Space
   factory ApptiveGridErrorReporting({
     required Uri reportingForm,
     required String project,
@@ -45,18 +49,34 @@ class ApptiveGridErrorReporting {
     return reporting;
   }
 
+  /// Link to the Form that reports the Errors
   final Uri reportingForm;
+
+  /// Identifier for the Project
   final String project;
+
+  /// Override this to ignore specific errors. The tool will never report 401 Responses
   final bool Function(dynamic) ignoreError;
+
+  /// Format the Default Error Description. By default this will format [Response] to show you the body and status code otherwise fall back to just `toString()` of the error
   final String Function(Object) formatError;
+
+  /// The Max Length of Log entries that are send.
+  /// Defaults to 25
+  /// Note that sending an error successfully will always clear the current Log
   final int maxLogEntries;
-  bool sendErrors = true;
+
+  /// A flag if the errors should be send. Set this to false if errors should not be send
+  /// Defaults to [kReleaseMode]
+  bool sendErrors;
 
   late final String? _appVersion;
   late final String? _os;
   late final String? _osVersion;
   late final String? _locale;
 
+  /// Optional Stage Parameter.
+  /// Set this to save which stage an error occurred on
   String? stage;
 
   final List<LogEntry> _log = [];
@@ -65,6 +85,8 @@ class ApptiveGridErrorReporting {
 
   final _setupCompleter = Completer();
 
+  /// A future that finishes once the initialization is completed
+  @visibleForTesting
   Future get isInitialized => _setupCompleter.future;
 
   Future<void> _init() async {
@@ -78,6 +100,8 @@ class ApptiveGridErrorReporting {
     _setupCompleter.complete();
   }
 
+  /// Log [message]
+  /// The log will hold a maximum of [maxLogEntries] entries and will be cleared when send to ApptiveGrid
   void log(String message) {
     if (_log.length > maxLogEntries) {
       _log.removeRange(0, _log.length - maxLogEntries);
@@ -86,8 +110,13 @@ class ApptiveGridErrorReporting {
     _log.add(LogEntry(time: DateTime.now(), message: message));
   }
 
-  Future<void> reportError(Object error,
-      {StackTrace? stackTrace, String? message}) async {
+  /// Reports [error] to ApptiveGrid
+  /// Provide [stackTrace] and [message] to get more information when looking at the Errors on ApptiveGrid
+  Future<void> reportError(
+    Object error, {
+    StackTrace? stackTrace,
+    String? message,
+  }) async {
     if (!_ignoreError(error)) {
       final reportingDate = DateTime.now();
       await _setupCompleter.future;
@@ -95,8 +124,10 @@ class ApptiveGridErrorReporting {
       try {
         if (sendErrors) {
           final formData = await _client.loadForm(
-              uri: reportingForm.replace(
-                  path: reportingForm.path.replaceAll(RegExp('/r/'), '/a/')));
+            uri: reportingForm.replace(
+              path: reportingForm.path.replaceAll(RegExp('/r/'), '/a/'),
+            ),
+          );
 
           Uint8List? logFile;
           Uint8List? stackTraceFile;
@@ -116,7 +147,6 @@ class ApptiveGridErrorReporting {
           // Send Data
           await _fillForm(
             formData: formData,
-            reportingDate: reportingDate,
             error: error,
             message: message,
             logFile: logFile,
@@ -124,17 +154,21 @@ class ApptiveGridErrorReporting {
           );
 
           await _client.submitForm(
-              formData.links[ApptiveLinkType.submit]!, formData);
+            formData.links[ApptiveLinkType.submit]!,
+            formData,
+          );
           debugPrint('AGErrorReporting: $errorName reported');
         } else {
           debugPrint(
-              'AGErrorReporting: Error $errorName not sent. sendErrors is false.');
+            'AGErrorReporting: Error $errorName not sent. sendErrors is false.',
+          );
         }
         _log.removeWhere((element) => element.time.isBefore(reportingDate));
       } catch (e) {
         log('Could not Report Error: $errorName. Cause: ${formatError(e)}');
         debugPrint(
-            'AGErrorReport: Could not Report Error: $errorName. Cause: ${formatError(e)}');
+          'AGErrorReport: Could not Report Error: $errorName. Cause: ${formatError(e)}',
+        );
       }
     }
   }
@@ -187,7 +221,6 @@ class ApptiveGridErrorReporting {
 
   Future<void> _fillForm({
     required FormData formData,
-    required DateTime reportingDate,
     required Object error,
     required String? message,
     required Uint8List? logFile,
@@ -195,7 +228,6 @@ class ApptiveGridErrorReporting {
   }) async {
     formData.fillValue(key: keys.project, value: project);
     formData.fillValue(key: keys.name, value: formatError(error));
-    formData.fillValue(key: keys.time, value: reportingDate);
     formData.fillValue(key: keys.appVersion, value: _appVersion);
     formData.fillValue(key: keys.os, value: _os);
     formData.fillValue(key: keys.osVersion, value: _osVersion);
@@ -219,7 +251,9 @@ class ApptiveGridErrorReporting {
       final stackAttachment =
           await _client.attachmentProcessor.createAttachment('stackTrace.txt');
       formData.attachmentActions[stackAttachment] = AddAttachmentAction(
-          byteData: stackTrace, attachment: stackAttachment);
+        byteData: stackTrace,
+        attachment: stackAttachment,
+      );
       (formData.components!
               .firstWhere((element) => element.field.key == keys.attachments)
               .data as AttachmentDataEntity)

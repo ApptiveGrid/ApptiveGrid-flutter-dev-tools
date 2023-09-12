@@ -1,7 +1,12 @@
+/// A Log Entry for ApptiveGridErrorReporting
 class LogEntry {
+  /// Creates a new LogEntry
   const LogEntry({required this.time, required this.message});
 
+  /// The Timestamp when this Entry was recorded
   final DateTime time;
+
+  /// The Message of this entry
   final String message;
 
   @override
