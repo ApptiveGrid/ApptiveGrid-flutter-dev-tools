@@ -162,11 +162,12 @@ class ApptiveGridErrorReporting {
           // Prepare Data
           await Future.wait([
             if (_log.isNotEmpty)
-              _createLogFile().then((file) {
+              _createFile(_createLogFileIsolate, _log).then((file) {
                 logFile = file;
               }),
             if (stackTrace != null)
-              _createStackTraceFile(stackTrace).then((file) {
+              _createFile(_createStackTraceFileIsolate, stackTrace)
+                  .then((file) {
                 stackTraceFile = file;
               }),
             if (_mutedErrors.isNotEmpty)
@@ -218,11 +219,12 @@ class ApptiveGridErrorReporting {
     return ignoreError(error);
   }
 
-  Future<Uint8List> _createLogFile() async {
+  Future<Uint8List> _createFile(
+    Future<void> Function(List<Object>) isolateWorker,
+    Object data,
+  ) async {
     final port = ReceivePort();
-
-    Isolate.spawn(_createLogFileIsolate, [port.sendPort, _log]);
-
+    Isolate.spawn(isolateWorker, [port.sendPort, data]);
     return await port.first as Uint8List;
   }
 
@@ -235,14 +237,6 @@ class ApptiveGridErrorReporting {
     final logBytes = utf8.encode(logString);
 
     Isolate.exit(port, logBytes);
-  }
-
-  Future<Uint8List> _createStackTraceFile(StackTrace stackTrace) async {
-    final port = ReceivePort();
-
-    Isolate.spawn(_createStackTraceFileIsolate, [port.sendPort, stackTrace]);
-
-    return await port.first as Uint8List;
   }
 
   static Future<void> _createStackTraceFileIsolate(List<Object> args) async {
