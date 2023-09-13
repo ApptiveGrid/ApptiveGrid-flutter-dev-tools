@@ -171,7 +171,7 @@ class ApptiveGridErrorReporting {
                 stackTraceFile = file;
               }),
             if (_mutedErrors.isNotEmpty)
-              _createMutedFile().then((file) {
+              _createFile(_createMutedFileIsolate, _mutedErrors).then((file) {
                 mutedErrorsFile = file;
               }),
           ]);
@@ -246,14 +246,6 @@ class ApptiveGridErrorReporting {
     final stackBytes = utf8.encode(stackTrace.toString());
 
     Isolate.exit(port, stackBytes);
-  }
-
-  Future<Uint8List> _createMutedFile() async {
-    final port = ReceivePort();
-
-    Isolate.spawn(_createMutedFileIsolate, [port.sendPort, _mutedErrors]);
-
-    return await port.first as Uint8List;
   }
 
   static Future<void> _createMutedFileIsolate(List<Object> args) async {
