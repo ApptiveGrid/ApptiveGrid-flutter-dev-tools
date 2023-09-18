@@ -1,0 +1,29 @@
+name: apptive_grid_error_reporting
+description: An error reporting tool using ApptiveGrid.
+version: 0.0.1
+homepage: https://www.apptivegrid.de
+repository: https://github.com/ApptiveGrid/apptive_grid_flutter_dev_tools/tree/main/packages/apptive_grid_error_reporting
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+  flutter: ">=1.17.0"
+
+dependency_overrides:
+  http: ^1.1.0
+
+dependencies:
+  apptive_grid_core: ^1.7.0
+
+  collection: ^1.17.2
+  flutter:
+    sdk: flutter
+  http: ^1.1.0
+  package_info_plus: ^1.4.2
+  universal_io: ^2.0.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  mocktail: ^1.0.0

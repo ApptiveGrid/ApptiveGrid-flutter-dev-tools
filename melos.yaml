@@ -1,4 +1,4 @@
-name: ApptiveGrid Flutter DevTools
+name: apptive_grid_flutter_dev_tools
 
 packages:
   - packages/**

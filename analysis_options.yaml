@@ -1,0 +1,17 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    public_member_api_docs: true
+    sort_constructors_first: true
+    hash_and_equals: true
+    avoid_print: true
+    require_trailing_commas: true
+    always_use_package_imports: true
+    use_super_parameters: true
+    unnecessary_brace_in_string_interps: true
+    unnecessary_parenthesis: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_literals_to_create_immutables: true

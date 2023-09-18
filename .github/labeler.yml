@@ -1,1 +1,1 @@
-p:reporting: packages/apptive_grid_reporting/**/*
+p:error_reporting: packages/apptive_grid_error_reporting/**/*
