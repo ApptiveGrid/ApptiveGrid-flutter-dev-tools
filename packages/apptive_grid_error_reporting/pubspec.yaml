@@ -9,16 +9,13 @@ environment:
 
   flutter: ">=1.17.0"
 
-dependency_overrides:
-  http: ^1.1.0
-
 dependencies:
   apptive_grid_core: ^1.7.0
 
   collection: ^1.17.2
   flutter:
     sdk: flutter
-  http: ^1.1.0
+  http: '>=0.13.6 <2.0.0'
   package_info_plus: ^1.4.2
   universal_io: ^2.0.4
 
