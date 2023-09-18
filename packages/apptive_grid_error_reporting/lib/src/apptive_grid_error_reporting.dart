@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'package:apptive_grid_core/apptive_grid_core.dart';
 import 'package:apptive_grid_error_reporting/src/keys.dart' as keys;
 import 'package:apptive_grid_error_reporting/src/model/log_entry.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -19,6 +20,7 @@ class ApptiveGridErrorReporting {
     required this.ignoreError,
     required this.formatError,
     required this.sendErrors,
+    required this.avoidDuplicatePerSession,
     required ApptiveGridClient client,
   }) : _client = client;
 
@@ -31,6 +33,7 @@ class ApptiveGridErrorReporting {
     int maxLogEntries = 25,
     bool Function(dynamic)? ignoreError,
     String Function(Object)? formatError,
+    bool? avoidDuplicatePerSession,
     bool sendErrors = kReleaseMode,
     ApptiveGridClient? client,
   }) {
@@ -41,6 +44,7 @@ class ApptiveGridErrorReporting {
       ignoreError: ignoreError ?? (_) => false,
       formatError: formatError ?? (error) => error._errorName,
       sendErrors: sendErrors,
+      avoidDuplicatePerSession: avoidDuplicatePerSession ?? false,
       client: client ?? ApptiveGridClient(), // coverage:ignore-line
     );
 
@@ -69,6 +73,16 @@ class ApptiveGridErrorReporting {
   /// A flag if the errors should be send. Set this to false if errors should not be send
   /// Defaults to [kReleaseMode]
   bool sendErrors;
+
+  /// Determines if the tool should avoid sending the same error multiple times per session
+  final bool avoidDuplicatePerSession;
+
+  final List<
+          (DateTime, String errorName, StackTrace? stackTrace, String? message)>
+      _mutedErrors = [];
+  final List<
+          (DateTime, String errorName, StackTrace? stackTrace, String? message)>
+      _sendErrors = [];
 
   late final String? _appVersion;
   late final String? _os;
@@ -121,6 +135,18 @@ class ApptiveGridErrorReporting {
       final reportingDate = DateTime.now();
       await _setupCompleter.future;
       final errorName = formatError(error);
+      if (avoidDuplicatePerSession &&
+          _sendErrors.firstWhereOrNull((report) {
+                // coverage:ignore-start
+                final (_, mutedErrorName, _, mutedMessage) = report;
+                // coverage:ignore-end
+
+                return mutedErrorName == errorName && mutedMessage == message;
+              }) !=
+              null) {
+        _mutedErrors.add((reportingDate, errorName, stackTrace, message));
+        return;
+      }
       try {
         if (sendErrors) {
           final formData = await _client.loadForm(
@@ -131,6 +157,7 @@ class ApptiveGridErrorReporting {
 
           Uint8List? logFile;
           Uint8List? stackTraceFile;
+          Uint8List? mutedErrorsFile;
 
           // Prepare Data
           await Future.wait([
@@ -143,6 +170,10 @@ class ApptiveGridErrorReporting {
                   .then((file) {
                 stackTraceFile = file;
               }),
+            if (_mutedErrors.isNotEmpty)
+              _createFile(_createMutedFileIsolate, _mutedErrors).then((file) {
+                mutedErrorsFile = file;
+              }),
           ]);
 
           // Send Data
@@ -152,12 +183,14 @@ class ApptiveGridErrorReporting {
             message: message,
             logFile: logFile,
             stackTrace: stackTraceFile,
+            mutedErrors: mutedErrorsFile,
           );
 
           await _client.submitForm(
             formData.links[ApptiveLinkType.submit]!,
             formData,
           );
+          _sendErrors.add((reportingDate, errorName, stackTrace, message));
           debugPrint('AGErrorReporting: $errorName reported');
         } else {
           debugPrint(
@@ -165,6 +198,8 @@ class ApptiveGridErrorReporting {
           );
         }
         _log.removeWhere((element) => element.time.isBefore(reportingDate));
+        _mutedErrors
+            .removeWhere((element) => element.$1.isBefore(reportingDate));
       } catch (e) {
         log('Could not Report Error: $errorName. Cause: ${formatError(e)}');
         debugPrint(
@@ -213,12 +248,31 @@ class ApptiveGridErrorReporting {
     Isolate.exit(port, stackBytes);
   }
 
+  static Future<void> _createMutedFileIsolate(List<Object> args) async {
+    final port = args[0] as SendPort;
+    final mutedFiles = args[1] as List<
+        (DateTime, Object error, StackTrace? stackTrace, String? message)>;
+
+    final stringBuffer = StringBuffer();
+    for (final (time, name, stackTrace, message) in mutedFiles) {
+      stringBuffer.writeln(time.toIso8601String());
+      stringBuffer.writeln('Ignored: $name | Message: $message');
+      stringBuffer.writeln(stackTrace.toString());
+      stringBuffer.writeln('-' * 30);
+    }
+
+    final bytes = utf8.encode(stringBuffer.toString());
+
+    Isolate.exit(port, bytes);
+  }
+
   Future<void> _fillForm({
     required FormData formData,
     required Object error,
     required String? message,
     required Uint8List? logFile,
     required Uint8List? stackTrace,
+    required Uint8List? mutedErrors,
   }) async {
     formData.fillValue(key: keys.project, value: project);
     formData.fillValue(key: keys.name, value: formatError(error));
@@ -253,6 +307,20 @@ class ApptiveGridErrorReporting {
               .data as AttachmentDataEntity)
           .value
           ?.add(stackAttachment);
+    }
+
+    if (mutedErrors != null) {
+      final mutedAttachment =
+          await _client.attachmentProcessor.createAttachment('mutedErrors.txt');
+      formData.attachmentActions[mutedAttachment] = AddAttachmentAction(
+        byteData: mutedErrors,
+        attachment: mutedAttachment,
+      );
+      (formData.components!
+              .firstWhere((element) => element.field.key == keys.attachments)
+              .data as AttachmentDataEntity)
+          .value
+          ?.add(mutedAttachment);
     }
   }
 }

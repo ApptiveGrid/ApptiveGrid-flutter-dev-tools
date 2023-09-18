@@ -540,6 +540,69 @@ void main() {
       expect(logString, contains('InitialError'));
     });
   });
+
+  group('Ignore Duplicate Send', () {
+    setUp(() {
+      when(() => client.loadForm(uri: reportingForm))
+          .thenAnswer((invocation) async => fullForm);
+
+      when(
+        () => client.submitForm(fullForm.links[ApptiveLinkType.submit]!, any()),
+      ).thenAnswer((invocation) async => Response('body', 201));
+    });
+    test(
+        'Do not send same error multiple times per session. Send Ignored Errors on next unique repoert',
+        () async {
+      final processor = MockAttachmentProcessor();
+      when(() => client.attachmentProcessor).thenReturn(processor);
+
+      when(() => processor.createAttachment('mutedErrors.txt')).thenAnswer(
+        (invocation) async => Attachment(
+          name: 'mutedErrors.txt',
+          url: Uri(path: '/mutedErrors/attachment'),
+          type: 'text/plain',
+        ),
+      );
+      errorReporting = ApptiveGridErrorReporting(
+        reportingForm: reportingForm,
+        project: 'project',
+        client: client,
+        sendErrors: true,
+        avoidDuplicatePerSession: true,
+      );
+
+      await errorReporting.isInitialized;
+
+      const dummyError = 'Original Error';
+
+      await errorReporting.reportError(dummyError);
+      // Resend Error should not trigger a send
+      await errorReporting.reportError(dummyError);
+
+      verify(
+        () => client.submitForm(
+          fullForm.links[ApptiveLinkType.submit]!,
+          any(),
+        ),
+      ).called(1);
+
+      await errorReporting.reportError('New Unique Error');
+
+      final sendForm = verify(
+        () => client.submitForm(
+          fullForm.links[ApptiveLinkType.submit]!,
+          captureAny(),
+        ),
+      ).captured.first as FormData;
+
+      final mutedErrorBytes =
+          (sendForm.attachmentActions.values.first as AddAttachmentAction)
+              .byteData;
+
+      final mutedErrorString = utf8.decode(mutedErrorBytes!);
+      expect(mutedErrorString, contains(dummyError));
+    });
+  });
 }
 
 const formFields = [
