@@ -3,6 +3,7 @@ import 'package:collection/collection.dart';
 import 'package:feedback/feedback.dart';
 import 'package:flutter/foundation.dart';
 
+// coverage:ignore-start
 /// This is an extension to make it easier to call
 /// [showAndUploadToApptiveGrid].
 extension BetterFeedbackX on FeedbackController {
@@ -24,6 +25,7 @@ extension BetterFeedbackX on FeedbackController {
     show(uploadToApptiveGrid(formUri: formUri));
   }
 }
+// coverage:ignore-end
 
 /// See [BetterFeedbackX.showAndUploadToApptiveGrid].
 /// This is just [visibleForTesting].
@@ -33,7 +35,8 @@ OnFeedbackCallback uploadToApptiveGrid({
   ApptiveGridClient? client,
 }) {
   return (UserFeedback feedback) async {
-    final apptiveGridClient = client ?? ApptiveGridClient();
+    final apptiveGridClient =
+        client ?? ApptiveGridClient(); // coverage:ignore-line
 
     final formData = await apptiveGridClient.loadForm(uri: formUri);
 
