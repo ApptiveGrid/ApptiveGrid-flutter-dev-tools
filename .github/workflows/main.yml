@@ -29,6 +29,10 @@ jobs:
         uses: VeryGoodOpenSource/very_good_coverage@v1
         with:
           path: ./packages/apptive_grid_error_reporting/coverage/lcov.info
+      - name: FeedbackApptiveGrid Coverage
+        uses: VeryGoodOpenSource/very_good_coverage@v1
+        with:
+          path: ./packages/feedback_apptive_grid/coverage/lcov.info
 
   android_examples:
     name: Build Android Examples
