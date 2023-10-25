@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-10-25
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`feedback_apptive_grid` - `v1.0.1`](#feedback_apptive_grid---v101)
+
+---
+
+#### `feedback_apptive_grid` - `v1.0.1`
+
+ - **FIX**: Fix apptivegrid website in pubspec.yaml (#7).
+ - **DOCS**: Add Demo Video to README (#8).
+
+
 ## 2023-09-19
 
 ### Changes
