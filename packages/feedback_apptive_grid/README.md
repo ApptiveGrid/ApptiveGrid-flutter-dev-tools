@@ -2,8 +2,7 @@
 
 This is a plugin to send user feedback gathered using [feedback](https://pub.dev/packages/feedback) to send to [ApptiveGrid](https://apptivegrid.de)
 
-<video src="https://github.com/ApptiveGrid/ApptiveGrid-flutter-dev-tools/blob/main/.github/assets/feedback_apptive_grid/demo.mp4?raw=true" controls="controls" style="max-width: 1000px;">
-</video>
+![demo.mp4]("https://github.com/ApptiveGrid/ApptiveGrid-flutter-dev-tools/blob/main/.github/assets/feedback_apptive_grid/demo.mp4?raw=true")
 
 ## Setup
 
