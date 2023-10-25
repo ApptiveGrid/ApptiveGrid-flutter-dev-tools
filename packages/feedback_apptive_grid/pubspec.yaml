@@ -1,7 +1,7 @@
 name: feedback_apptive_grid
 description: A Flutter package for getting better feedback. It allows the user to give interactive feedback directly in the app and upload it to ApptiveGrid
 version: 1.0.0
-homepage: https://apptivegrid.de
+homepage: https://www.apptivegrid.de
 repository: https://github.com/ApptiveGrid/ApptiveGrid-flutter-dev-tools/tree/main/packages/feedback_apptive_grid
 
 environment:
