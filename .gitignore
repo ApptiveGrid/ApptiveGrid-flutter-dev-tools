@@ -47,7 +47,6 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
-!.github/assets/*/*.mp4
 
 
 **/coverage
