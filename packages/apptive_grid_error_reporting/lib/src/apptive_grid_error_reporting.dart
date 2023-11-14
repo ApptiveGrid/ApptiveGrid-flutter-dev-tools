@@ -114,6 +114,30 @@ class ApptiveGridErrorReporting {
     _setupCompleter.complete();
   }
 
+  /// Report Flutter Errors to your ApptiveGrid Reporting Instance
+  /// This also logs additional Information from the Error
+  Future<void> reportFlutterError(
+    FlutterErrorDetails flutterErrorDetails,
+  ) {
+    FlutterError.presentError(flutterErrorDetails);
+
+    final information = flutterErrorDetails.informationCollector?.call() ?? [];
+
+    final stringBuffer = StringBuffer();
+    stringBuffer.writeln('--- Begin Flutter Error ---');
+    for (final info in information) {
+      stringBuffer.writeln(info.toDescription());
+    }
+    stringBuffer.writeln('--- End Flutter Error ---');
+    log(stringBuffer.toString());
+
+    return reportError(
+      flutterErrorDetails.exception,
+      stackTrace: flutterErrorDetails.stack,
+      message: flutterErrorDetails.context?.toDescription(),
+    );
+  }
+
   /// Log [message]
   /// The log will hold a maximum of [maxLogEntries] entries and will be cleared when send to ApptiveGrid
   void log(String message) {
