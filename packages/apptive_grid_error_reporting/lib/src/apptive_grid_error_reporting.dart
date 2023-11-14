@@ -116,6 +116,8 @@ class ApptiveGridErrorReporting {
 
   /// Report Flutter Errors to your ApptiveGrid Reporting Instance
   /// This also logs additional Information from the Error
+  ///
+  /// To use this set: `FlutterError.onError = reporting.reportFlutterError`
   Future<void> reportFlutterError(
     FlutterErrorDetails flutterErrorDetails,
   ) {
