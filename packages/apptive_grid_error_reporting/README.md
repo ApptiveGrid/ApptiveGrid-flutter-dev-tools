@@ -33,6 +33,14 @@ reporting.report(
 ); 
 ```
 
+### Repord Flutter Errors
+
+To report Flutter Errors set the `FlutterError.onError` reporting callback like this:
+
+```dart
+FlutterError.onError = reporting.reportFlutterError;
+```
+
 ## Log Events
 You can provide additional Log Entries to further know what a user might have done leading to an error.
 ```dart
