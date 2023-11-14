@@ -240,6 +240,81 @@ void main() {
 
       expect(stackTraceString, equals(stackTrace.toString()));
     });
+
+    test('Report Flutter Error', () async {
+      final processor = MockAttachmentProcessor();
+      when(() => client.attachmentProcessor).thenReturn(processor);
+
+      when(() => processor.createAttachment('stackTrace.txt')).thenAnswer(
+        (invocation) async => Attachment(
+          name: 'stackTrace.txt',
+          url: Uri(path: '/stackTrace/attachment'),
+          type: 'text/plain',
+        ),
+      );
+      when(() => processor.createAttachment('log.txt')).thenAnswer(
+        (invocation) async => Attachment(
+          name: 'log.txt',
+          url: Uri(path: '/log/attachment'),
+          type: 'text/plain',
+        ),
+      );
+      errorReporting = ApptiveGridErrorReporting(
+        reportingForm: reportingForm,
+        project: 'project',
+        client: client,
+        sendErrors: true,
+      );
+
+      await errorReporting.isInitialized;
+      const exception = 'foo exception';
+      const exceptionReason = 'bar reason';
+      const exceptionLibrary = 'baz library';
+      const exceptionFirstMessage = 'first message';
+      const exceptionSecondMessage = 'second message';
+      final stack = StackTrace.current;
+      final FlutterErrorDetails details = FlutterErrorDetails(
+        exception: exception,
+        stack: stack,
+        library: exceptionLibrary,
+        informationCollector: () => <DiagnosticsNode>[
+          DiagnosticsNode.message(exceptionFirstMessage),
+          DiagnosticsNode.message(exceptionSecondMessage),
+        ],
+        context: ErrorDescription(exceptionReason),
+      );
+      final oldPresentError = FlutterError.presentError;
+      var presentedError = false;
+      FlutterError.presentError = (details) {
+        presentedError = true;
+      };
+      try {
+        await errorReporting.reportFlutterError(details);
+        expect(presentedError, true);
+        final sendForm = verify(
+          () => client.submitForm(
+            fullForm.links[ApptiveLinkType.submit]!,
+            captureAny(),
+          ),
+        ).captured.first as FormData;
+        expect(
+          sendForm.components!
+              .firstWhere((element) => element.field.key == keys.name)
+              .data
+              .value,
+          equals(exception),
+        );
+        expect(
+          sendForm.components!
+              .firstWhere((element) => element.field.key == keys.message)
+              .data
+              .value,
+          equals(exceptionReason),
+        );
+      } finally {
+        FlutterError.presentError = oldPresentError;
+      }
+    });
   });
 
   group('Log', () {
