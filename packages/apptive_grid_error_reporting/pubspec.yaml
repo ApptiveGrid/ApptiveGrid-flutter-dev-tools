@@ -16,7 +16,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: '>=0.13.6 <2.0.0'
-  package_info_plus: ^5.0.1
+  package_info_plus: '>=4.0.0 <6.0.0'
   universal_io: ^2.2.2
 
 dev_dependencies:
