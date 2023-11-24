@@ -1,6 +1,6 @@
 name: apptive_grid_error_reporting
 description: An error reporting tool using ApptiveGrid to send/store error reports
-version: 0.1.1
+version: 1.0.0
 homepage: https://www.apptivegrid.de
 repository: https://github.com/ApptiveGrid/ApptiveGrid-flutter-dev-tools/tree/main/packages/apptive_grid_error_reporting
 
